@@ -1,0 +1,8 @@
+{% extends 'api/base.html' %}
+
+{% block title %}{{ title }}{% endblock title %}
+
+{% block header %}{{ title }}{% endblock header %}
+{% block content %}
+<a href="{% url 'login' %}">Login again?</a>
+{% endblock content %}

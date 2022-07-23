@@ -1,0 +1,22 @@
+{% extends 'api/base.html' %}
+{% block title %}Tela de Login{% endblock title %}
+{% block content %}
+{% if form.errors %}
+<p>Your username and password didn't match. Please try again.</p>
+{% endif %}
+{% if next %}
+    {% if user.is_authenticated %}
+    <p>Your account doesn't have access to this page. To proceed,
+    please login with an account that has access.</p>
+    {% else %}
+    <p>Please login to see this page.</p>
+    {% endif %}
+{% endif %}
+<form method="post" action="{% url 'login' %}"> {% csrf_token %}
+    <table>
+    {{form.as_table}}
+    </table>
+    <input type="hidden" name="next" value="{{ next }}">
+    <input type="submit" value="entrar">
+</form>
+{% endblock content %}
