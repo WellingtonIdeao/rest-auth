@@ -1,7 +1,7 @@
 from django.test import TestCase, RequestFactory
 from django.contrib.auth.forms import AuthenticationForm
 from django.urls import reverse
-from ..views import UserLoginView
+from ..views import UserLoginView, UserLogoutView
 
 
 class UserLoginViewTest(TestCase):
@@ -79,4 +79,67 @@ class UserLoginViewTest(TestCase):
         user = response.context['user']
         is_auth = user.is_authenticated
         self.assertFalse(is_auth)
+
+
+class UserLogoutViewTest(TestCase):
+    fixtures = ['user.json']
+
+    def test_logout_url_location(self):
+        response = self.client.get('/api-auth/logout/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_logout_url_location_by_namespace(self):
+        response = self.client.get(reverse('logout'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_logout_template_used_is_correct(self):
+        response = self.client.get(reverse('logout'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'api/registration/logged_out.html')
+
+    def test_logout_template_used_is_correct_by_view(self):
+        request = RequestFactory().get(reverse('logout'))
+        view = UserLogoutView()
+        view.setup(request)
+        templates_names = view.get_template_names()
+        self.assertIn('api/registration/logged_out.html', templates_names)
+
+    def test_logout_url_name(self):
+        response = self.client.get(reverse('logout'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.resolver_match.url_name, 'logout')
+
+    def test_logout_view_served_the_response(self):
+        response = self.client.get(reverse('logout'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.resolver_match.func.view_class, UserLogoutView)
+
+    def test_logout_auth_user(self):
+        # Login the user
+        logged_in = self.client.login(username='admin', password='123456')
+        self.assertTrue(logged_in)
+
+        # Logout the user
+        response = self.client.get(reverse('logout'))
+        self.assertEqual(response.status_code, 200)
+
+        # Check if user is logout
+        user = response.context['user']
+        is_auth = user.is_authenticated
+        self.assertFalse(is_auth)
+
+    def test_logout_title_is_in_context_by_view(self):
+        request = RequestFactory().get(reverse('logout'))
+        view = UserLogoutView()
+        view.setup(request)
+        context = view.get_context_data()
+        self.assertIn('title', context)
+
+    def test_logout_title_is_in_context_by_req_resp_cycle(self):
+        response = self.client.get(reverse('logout'))
+        self.assertEqual(response.status_code, 200)
+
+        self.assertTrue('title' in response.context)
+
+
 
