@@ -1,7 +1,10 @@
 from django.test import TestCase, RequestFactory
 from django.contrib.auth.forms import AuthenticationForm
 from django.urls import reverse
-from ..views import UserLoginView, UserLogoutView
+
+from rest_framework.test import APIRequestFactory, APITestCase
+from rest_framework import status
+from ..views import UserLoginView, UserLogoutView, UserViewSet
 
 
 class UserLoginViewTest(TestCase):
@@ -142,4 +145,69 @@ class UserLogoutViewTest(TestCase):
         self.assertTrue('title' in response.context)
 
 
+class UserViewSetTest(APITestCase):
+    fixtures = ['user.json']
+
+    def test_get_list_users_by_url_location(self):
+        url = '/users/'
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_list_users_by_url_namespace(self):
+        url = reverse('user-list')
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_detail_user_by_url_location(self):
+        url = '/users/1/'
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_detail_user_by_url_namespace(self):
+        url = reverse('user-detail', kwargs={'pk': 1})
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_list_user_url_json_format(self):
+        url = '/users.json'
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_detail_url_json_format(self):
+        url = '/users/1.json'
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_get_list_user_length(self):
+        url = reverse('user-list')
+        response = self.client.get(url, format='json')
+        self.assertEqual(len(response.data), 1)
+
+    def test_get_list_response_data(self):
+        url = reverse('user-list')
+        response = self.client.get(url, format='json')
+        self.assertEqual(response.data, [{'url': 'http://testserver/users/1/', 'id': 1, 'username': 'admin'}])
+
+    def test_get_list_rendered(self):
+        view = UserViewSet.as_view({'get': 'list'})
+        url = reverse('user-list')
+        request = APIRequestFactory().get(url)
+        response = view(request)
+        response.render()
+        self.assertEqual(response.content, b'[{"url":"http://testserver/users/1/","id":1,"username":"admin"}]')
+
+    def test_get_detail_response_data(self):
+        url = reverse('user-detail', kwargs={'pk': 1})
+        response = self.client.get(url, format='json')
+
+        domain = 'http://testserver'
+        self.assertEqual(response.data, {'url': domain+url, 'id': 1, 'username': 'admin'})
+
+    def test_get_detail_rendered(self):
+        view = UserViewSet.as_view({'get': 'retrieve'})
+        url = reverse('user-detail', kwargs={'pk': 1})
+        request = APIRequestFactory().get(url)
+        response = view(request, pk=1)
+        response.render()
+        self.assertEqual(response.content, b'{"url":"http://testserver/users/1/","id":1,"username":"admin"}')
 
